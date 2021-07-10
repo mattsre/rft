@@ -1,0 +1,2 @@
+[workspace]
+members = ["r5t-client", "r5t-queue", "r5t-controller"]

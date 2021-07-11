@@ -7,5 +7,5 @@ r5t
 
 ## Architecture
 
-![r5tarchitecture-diagram](docs/content/r5tarchitecture-diagram.png)
+![Current Architecture Diagram](docs/content/r5t-architecture-diagramV2.png)
 

@@ -8,3 +8,5 @@ edition = "2018"
 [dependencies]
 r5t-core = { path = "../r5t-core" }
 clap = "3.0.0-beta.2"
+serde_json = "1.0"
+isahc = "1.4"

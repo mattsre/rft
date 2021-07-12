@@ -1,5 +1,6 @@
 use clap::{crate_version, App, Arg, Values};
-use r5t_core::Job;
+use isahc::{prelude::*, Body, Error, HttpClient, Request, Response};
+use r5t_core::{Batch, Job};
 use std::{collections::HashMap, process::exit};
 
 enum ParamError {
@@ -58,7 +59,7 @@ fn main() {
                     match format {
                         "pairs" => match generate_map_for_params(params, ParamFormat::PAIRS) {
                             Ok((param_map, num_of_pairs)) => {
-                                let mut job_queue = Vec::<Job>::new();
+                                let mut batch = Batch::new();
                                 for i in 0..num_of_pairs {
                                     let mut single_job_params: HashMap<String, String> =
                                         HashMap::new();
@@ -68,11 +69,23 @@ fn main() {
                                     }
 
                                     let job = Job::new(filename, single_job_params);
-                                    job_queue.push(job.clone());
-                                    println!("{}", job);
+                                    batch.jobs.push(job.clone());
                                 }
 
-                                println!("Queue has {} jobs", job_queue.len());
+                                println!("Batch has {} jobs", batch.jobs.len());
+
+                                let json = serde_json::to_string(&batch).unwrap_or("".to_string());
+                                match post_batch("http://127.0.0.1:8000/batch", json) {
+                                    Ok(mut body) => {
+                                        if let Ok(response) = body.text() {
+                                            println!("Successfully posted job batch to gateway with response: {}", response);
+                                        }
+                                    }
+                                    Err(err) => println!(
+                                        "Error! - Failed to post job batch to gateway: {}",
+                                        err
+                                    ),
+                                }
                             }
                             Err(err) => match err {
                                 ParamError::InvalidParam => {
@@ -85,14 +98,26 @@ fn main() {
                             Ok((param_map, _)) => {
                                 let combos = generate_param_combos(param_map);
 
-                                let mut job_queue = Vec::<Job>::new();
+                                let mut batch = Batch::new();
                                 for combo in combos {
                                     let job = Job::new(filename, combo);
-                                    job_queue.push(job.clone());
-                                    println!("{}", job);
+                                    batch.jobs.push(job.clone());
                                 }
 
-                                println!("Queue has {} jobs", job_queue.len());
+                                println!("Batch has {} jobs", batch.jobs.len());
+
+                                let json = serde_json::to_string(&batch).unwrap_or("".to_string());
+                                match post_batch("http://127.0.0.1:8000/batch", json) {
+                                    Ok(mut body) => {
+                                        if let Ok(response) = body.text() {
+                                            println!("Successfully posted job batch to gateway with response: {}", response);
+                                        }
+                                    }
+                                    Err(err) => println!(
+                                        "Error! - Failed to post job batch to gateway: {}",
+                                        err
+                                    ),
+                                }
                             }
                             Err(err) => match err {
                                 ParamError::InvalidParam => {
@@ -109,6 +134,16 @@ fn main() {
             }
         }
     }
+}
+
+fn post_batch(uri: &str, batch_json: String) -> Result<Response<Body>, Error> {
+    let client = HttpClient::new()?;
+
+    let request = Request::post(uri)
+        .header("Content-Type", "application/json")
+        .body(batch_json)?;
+
+    client.send(request)
 }
 
 fn generate_param_combos(params: HashMap<String, Vec<String>>) -> Vec<HashMap<String, String>> {

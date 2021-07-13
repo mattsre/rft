@@ -7,9 +7,15 @@ use rocket::serde::json::{serde_json::json, Json, Value};
 
 #[post("/batch", format = "json", data = "<batch>")]
 fn create_batch(batch: Json<Batch>) -> Value {
-    println!("Recieved batch of jobs to process: {}", batch.jobs.len());
+    println!(
+        "Recieved batch with ID: {} from author: {} with {} jobs to process using file: {}",
+        &batch.batch_id,
+        &batch.author,
+        &batch.jobs.len(),
+        &batch.source_file
+    );
 
-    match push_batch_to_redis(batch) {
+    match push_batch_to_redis(batch.into_inner()) {
         Ok(_) => {
             return json!({
                 "status": "ok",
@@ -36,7 +42,7 @@ fn rocket() -> _ {
     rocket::build().mount("/", routes![create_batch])
 }
 
-fn push_batch_to_redis(batch: Json<Batch>) -> redis::RedisResult<()> {
+fn push_batch_to_redis(batch: Batch) -> redis::RedisResult<()> {
     let connection_details = ConnectionInfo {
         addr: Box::new(ConnectionAddr::Tcp("127.0.0.1".to_string(), 6379)),
         db: 0,
@@ -46,15 +52,13 @@ fn push_batch_to_redis(batch: Json<Batch>) -> redis::RedisResult<()> {
     let client = redis::Client::open(connection_details)?;
     let mut conn = client.get_connection()?;
 
-    for job in batch.jobs.clone() {
-        match serde_json::to_string(&job) {
-            Ok(job_json) => {
-                if let Err(err) = conn.rpush::<&str, String, i32>("queued_jobs", job_json) {
-                    return RedisResult::Err(err);
-                }
+    match serde_json::to_string(&batch) {
+        Ok(batch_json) => {
+            if let Err(err) = conn.rpush::<&str, String, i32>("queued_batches", batch_json) {
+                return RedisResult::Err(err);
             }
-            Err(_) => todo!(),
         }
+        Err(_) => todo!(),
     }
 
     Ok(())

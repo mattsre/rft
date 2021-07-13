@@ -30,6 +30,20 @@ impl Batch {
     }
 }
 
+impl fmt::Display for Batch {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "batch_id: {}\n", &self.batch_id).unwrap_or(());
+        write!(f, "author: {}\n", &self.author).unwrap_or(());
+        write!(f, "source_file: {}\n", &self.source_file).unwrap_or(());
+        write!(f, "jobs: \n").unwrap_or(());
+        for job in &self.jobs.clone() {
+            write!(f, "{}", &job).unwrap_or(());
+        }
+
+        write!(f, "")
+    }
+}
+
 // Job structure:
 // {
 //     "job_id": 12345
@@ -45,6 +59,12 @@ pub struct Job {
     pub params: HashMap<String, String>,
 }
 
+impl Job {
+    pub fn new(job_id: i32, params: HashMap<String, String>) -> Job {
+        return Job { job_id, params };
+    }
+}
+
 impl fmt::Display for Job {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "job_id: {}\n", &self.job_id).unwrap_or(());
@@ -54,11 +74,5 @@ impl fmt::Display for Job {
         }
 
         write!(f, "")
-    }
-}
-
-impl Job {
-    pub fn new(job_id: i32, params: HashMap<String, String>) -> Job {
-        return Job { job_id, params };
     }
 }

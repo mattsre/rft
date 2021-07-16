@@ -59,7 +59,7 @@ fn main() {
                     match format {
                         "pairs" => match generate_map_for_params(params, ParamFormat::PAIRS) {
                             Ok((param_map, num_of_pairs)) => {
-                                let mut batch = Batch::new(1, "Matt", filename);
+                                let mut batch = Batch::new("Matt", filename);
                                 for i in 0..num_of_pairs {
                                     let mut single_job_params: HashMap<String, String> =
                                         HashMap::new();
@@ -68,7 +68,7 @@ fn main() {
                                             .insert(key.clone(), val.get(i).unwrap().clone());
                                     }
 
-                                    let job = Job::new(1, single_job_params);
+                                    let job = Job::new(single_job_params);
                                     batch.jobs.push(job.clone());
                                 }
 
@@ -98,9 +98,9 @@ fn main() {
                             Ok((param_map, _)) => {
                                 let combos = generate_param_combos(param_map);
 
-                                let mut batch = Batch::new(1, "Matt", filename);
+                                let mut batch = Batch::new("Matt", filename);
                                 for combo in combos {
-                                    let job = Job::new(1, combo);
+                                    let job = Job::new(combo);
                                     batch.jobs.push(job.clone());
                                 }
 

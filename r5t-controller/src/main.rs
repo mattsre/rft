@@ -1,7 +1,11 @@
 use std::process::exit;
 
-use k8s_openapi::api::core::v1::Pod;
-use kube::{api::ListParams, Api, Client, ResourceExt};
+use futures::{StreamExt, TryStreamExt};
+use k8s_openapi::api::{batch::v1::Job as K8S_JOB, core::v1::Pod};
+use kube::{
+    api::{ListParams, PostParams, WatchEvent},
+    Api, Client, ResourceExt,
+};
 use r5t_core::{Batch, Job};
 use redis::{Commands, ConnectionAddr, ConnectionInfo};
 use tokio::time::Duration;
@@ -12,15 +16,18 @@ async fn main() -> Result<(), kube::Error> {
         addr: Box::new(ConnectionAddr::Tcp("127.0.0.1".to_string(), 6379)),
         db: 0,
         username: None,
-        passwd: Some("CFLnpBvBb6".to_string()),
+        passwd: Some("Mxu168c6OL".to_string()),
     };
-    if let Ok(client) = redis::Client::open(connection_details) {
-        match client.get_connection() {
+
+    let kube_client = Client::try_default().await?;
+    let jobs: Api<K8S_JOB> = Api::namespaced(kube_client, "default");
+
+    if let Ok(redis_client) = redis::Client::open(connection_details) {
+        match redis_client.get_connection() {
             Ok(mut conn) => loop {
                 let mut queued_batches: Vec<String> = conn.lrange("queued_batches", 0, -1).unwrap();
 
                 if queued_batches.len() == 0 {
-                    println!("No batches in queue");
                     tokio::time::sleep(Duration::from_millis(5000)).await;
                     continue;
                 }
@@ -32,10 +39,83 @@ async fn main() -> Result<(), kube::Error> {
 
                     println!("Processing batch: \n{}", parsed_batch);
 
+                    let indexed_job = serde_json::from_value(serde_json::json!({
+                        "apiVersion": "batch/v1",
+                        "kind": "Job",
+                        "metadata": {
+                            "name": "r5t-indexed-job"
+                        },
+                        "spec": {
+                            "completions": 5,
+                            "parallelism": 3,
+                            "completionMode": "Indexed",
+                            "template": {
+                                "spec": {
+                                    "restartPolicy": "Never",
+                                    "containers": [
+                                        {
+                                            "name": "worker",
+                                            "image": "docker.io/library/busybox",
+                                            "command": [
+                                                "rev",
+                                                "/input/data.txt"
+                                            ],
+                                            "volumeMounts": [
+                                                {
+                                                    "mountPath": "/input",
+                                                    "name": "input"
+                                                }
+                                            ]
+                                        }
+                                    ],
+                                    "volumes": [
+                                        {
+                                            "name": "input",
+                                            "downwardAPI": {
+                                                "items": [
+                                                    {
+                                                        "path": "data.txt",
+                                                        "fieldRef": {
+                                                            "fieldPath": "metadata.annotations['batch.kubernetes.io/job-completion-index']"
+                                                        }
+                                                    }
+                                                ]
+                                            }
+                                        }
+                                    ]
+                                }
+                            }
+                        },
+                    }))?;
+
+                    let job = jobs.create(&PostParams::default(), &indexed_job).await?;
+                    let lp = ListParams::default()
+                        .fields(&format!("metadata.name={}", "r5t-indexed-job"))
+                        .timeout(10);
+
+                    let mut stream = jobs.watch(&lp, "0").await?.boxed();
+
+                    while let Some(status) = stream.try_next().await? {
+                        match status {
+                            WatchEvent::Added(o) => println!("Added {}", o.name()),
+                            WatchEvent::Modified(o) => {
+                                let s = o.status.as_ref().expect("status exists on job");
+                                let indices = s.completed_indexes.clone().unwrap_or_default();
+                                println!(
+                                    "Modified: {} with indices completed: {}",
+                                    o.name(),
+                                    indices
+                                );
+                            }
+                            WatchEvent::Deleted(o) => println!("Deleted {}", o.name()),
+                            WatchEvent::Error(e) => println!("Error {}", e),
+                            _ => {}
+                        }
+                    }
+
                     queued_batches = conn.lrange("queued_batches", 0, -1).unwrap();
                 }
 
-                println!("Processed all batches!");
                 tokio::time::sleep(Duration::from_millis(5000)).await;
             },
             Err(err) => {

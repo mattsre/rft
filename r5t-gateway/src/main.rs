@@ -2,7 +2,7 @@
 extern crate rocket;
 
 use r5t_core::Batch;
-use redis::{Commands, ConnectionAddr, ConnectionInfo, RedisResult};
+use redis::{Commands, Connection, ConnectionAddr, ConnectionInfo, RedisResult};
 use rocket::serde::json::{serde_json::json, Json, Value};
 
 #[post("/batch", format = "json", data = "<batch>")]
@@ -47,7 +47,7 @@ fn push_batch_to_redis(batch: Batch) -> redis::RedisResult<()> {
         addr: Box::new(ConnectionAddr::Tcp("127.0.0.1".to_string(), 6379)),
         db: 0,
         username: None,
-        passwd: Some("CFLnpBvBb6".to_string()),
+        passwd: Some("Mxu168c6OL".to_string()),
     };
     let client = redis::Client::open(connection_details)?;
     let mut conn = client.get_connection()?;

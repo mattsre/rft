@@ -1,10 +1,13 @@
 use core::fmt;
+use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
+static ID_LENGTH: usize = 10;
+
 // Batch structure:
 // {
-//     "batch_id": 123,
+//     "batch_id": "fkIopp4D_K",
 //     "author": "Matt",
 //     "source_file": "testing.py",
 //     "jobs": [
@@ -13,16 +16,16 @@ use std::collections::HashMap;
 // }
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Batch {
-    pub batch_id: i32,
+    pub batch_id: String,
     pub author: String,
     pub source_file: String,
     pub jobs: Vec<Job>,
 }
 
 impl Batch {
-    pub fn new(batch_id: i32, author: &str, source_file: &str) -> Batch {
+    pub fn new(author: &str, source_file: &str) -> Batch {
         Batch {
-            batch_id,
+            batch_id: nanoid!(ID_LENGTH),
             author: author.to_string(),
             source_file: source_file.to_string(),
             jobs: Vec::<Job>::new(),
@@ -46,7 +49,7 @@ impl fmt::Display for Batch {
 
 // Job structure:
 // {
-//     "job_id": 12345
+//     "job_id": "EKKFKWaBJZ"
 //     "params": {
 //         "start_date": "1980",
 //         "end_date": "2020",
@@ -55,13 +58,16 @@ impl fmt::Display for Batch {
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Job {
-    pub job_id: i32,
+    pub job_id: String,
     pub params: HashMap<String, String>,
 }
 
 impl Job {
-    pub fn new(job_id: i32, params: HashMap<String, String>) -> Job {
-        return Job { job_id, params };
+    pub fn new(params: HashMap<String, String>) -> Job {
+        return Job {
+            job_id: nanoid!(ID_LENGTH),
+            params,
+        };
     }
 }
 

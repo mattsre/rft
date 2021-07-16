@@ -33,9 +33,8 @@ async fn main() -> Result<(), kube::Error> {
                 }
 
                 while queued_batches.len() != 0 {
-                    let current_batch: String = conn.lpop("queued_batches").unwrap();
-                    let parsed_batch: Batch =
-                        serde_json::from_str(&current_batch.as_str()).unwrap();
+                    let json_batch: String = conn.lpop("queued_batches").unwrap();
+                    let parsed_batch: Batch = serde_json::from_str(&json_batch.as_str()).unwrap();
 
                     println!("Processing batch: \n{}", parsed_batch);
 
@@ -43,22 +42,40 @@ async fn main() -> Result<(), kube::Error> {
                         "apiVersion": "batch/v1",
                         "kind": "Job",
                         "metadata": {
-                            "name": "r5t-indexed-job"
+                            "name": format!("r5t-indexed-job-{}", parsed_batch.batch_id)
                         },
                         "spec": {
-                            "completions": 5,
+                            "completions": parsed_batch.jobs.len(),
                             "parallelism": 3,
                             "completionMode": "Indexed",
                             "template": {
                                 "spec": {
                                     "restartPolicy": "Never",
+                                    "initContainers": [
+                                        {
+                                            "name": "input-mapping",
+                                            "image": "public.ecr.aws/e1q1z8n5/alpine-jq",
+                                            "command": [
+                                                "/bin/sh",
+                                                "-c",
+                                                format!("echo '{}' | jq '.jobs['\"$JOB_COMPLETION_INDEX\"']' > /input/data.json", json_batch)
+                                            ],
+                                            "volumeMounts": [
+                                                {
+                                                    "mountPath": "/input",
+                                                    "name": "input"
+                                                }
+                                            ]
+                                        }
+                                    ],
                                     "containers": [
                                         {
                                             "name": "worker",
-                                            "image": "docker.io/library/busybox",
+                                            "image": "docker.io/library/bash",
                                             "command": [
-                                                "rev",
-                                                "/input/data.txt"
+                                                "bash",
+                                                "-c",
+                                                "cat /input/data.json"
                                             ],
                                             "volumeMounts": [
                                                 {
@@ -71,16 +88,7 @@ async fn main() -> Result<(), kube::Error> {
                                     "volumes": [
                                         {
                                             "name": "input",
-                                            "downwardAPI": {
-                                                "items": [
-                                                    {
-                                                        "path": "data.txt",
-                                                        "fieldRef": {
-                                                            "fieldPath": "metadata.annotations['batch.kubernetes.io/job-completion-index']"
-                                                        }
-                                                    }
-                                                ]
-                                            }
+                                            "emptyDir": {}
                                         }
                                     ]
                                 }

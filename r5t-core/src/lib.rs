@@ -4,6 +4,9 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 static ID_LENGTH: usize = 10;
+static ID_ALPHA: [char; 16] = [
+    '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', 'a', 'b', 'c', 'd', 'e', 'f',
+];
 
 // Batch structure:
 // {
@@ -25,7 +28,7 @@ pub struct Batch {
 impl Batch {
     pub fn new(author: &str, source_file: &str) -> Batch {
         Batch {
-            batch_id: nanoid!(ID_LENGTH),
+            batch_id: nanoid!(ID_LENGTH, &ID_ALPHA),
             author: author.to_string(),
             source_file: source_file.to_string(),
             jobs: Vec::<Job>::new(),
@@ -65,7 +68,7 @@ pub struct Job {
 impl Job {
     pub fn new(params: HashMap<String, String>) -> Job {
         return Job {
-            job_id: nanoid!(ID_LENGTH),
+            job_id: nanoid!(ID_LENGTH, &ID_ALPHA),
             params,
         };
     }

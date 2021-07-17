@@ -1,0 +1,10 @@
+[build-system]
+requires = ["flit_core >=2,<4"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "r5t_worker_sdk"
+author = "Matthew Conway"
+author-email = "mattconway55@gmail.com"
+home-page = "https://github.com/retwolf"
+classifiers = ["License :: OSI Approved :: MIT License"]

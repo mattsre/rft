@@ -1,9 +1,16 @@
 #[macro_use]
 extern crate rocket;
 
+use std::env;
+
 use r5t_core::Batch;
 use redis::{Commands, Connection, ConnectionAddr, ConnectionInfo, RedisResult};
 use rocket::serde::json::{serde_json::json, Json, Value};
+
+#[get("/health")]
+fn health_check() -> &'static str {
+    "Healthy!"
+}
 
 #[post("/batch", format = "json", data = "<batch>")]
 fn create_batch(batch: Json<Batch>) -> Value {
@@ -39,15 +46,17 @@ fn create_batch(batch: Json<Batch>) -> Value {
 
 #[launch]
 fn rocket() -> _ {
-    rocket::build().mount("/", routes![create_batch])
+    rocket::build().mount("/", routes![create_batch, health_check])
 }
 
 fn push_batch_to_redis(batch: Batch) -> redis::RedisResult<()> {
+    let redis_host = env::var("REDIS_HOST").unwrap_or("127.0.0.1".to_string());
+    let redis_password = env::var("REDIS_PASSWORD").unwrap_or("Mxu168c6OL".to_string());
     let connection_details = ConnectionInfo {
-        addr: Box::new(ConnectionAddr::Tcp("127.0.0.1".to_string(), 6379)),
+        addr: Box::new(ConnectionAddr::Tcp(redis_host, 6379)),
         db: 0,
         username: None,
-        passwd: Some("Mxu168c6OL".to_string()),
+        passwd: Some(redis_password),
     };
     let client = redis::Client::open(connection_details)?;
     let mut conn = client.get_connection()?;

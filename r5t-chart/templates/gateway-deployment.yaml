@@ -14,19 +14,22 @@ spec:
       labels:
         app: {{ $fullname }}
     spec:
+      initContainers:
+      - name: init-redis
+        image: busybox:1.28
+        command: ['sh', '-c', "until nslookup {{ .Release.Name}}-redis-master.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for redis; sleep 2; done"]
       containers:
       - name: {{ "gateway" }}
         image: "{{ .Values.gateway.image }}"
-        imagePullPolicy: IfNotPresent
+        env:
+          - name: REDIS_HOST
+            value: {{ .Release.Name }}-redis-master
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }}-redis
+                key: redis-password
         ports:
         - containerPort: {{ .Values.gateway.internalPort | int }}
-        livenessProbe:
-          httpGet:
-            path: /
-            port: {{ .Values.gateway.internalPort | int }}
-        readinessProbe:
-          httpGet:
-            path: /
-            port: {{ .Values.gateway.internalPort | int }}
         resources:
 {{ toYaml .Values.gateway.resources | indent 10 }}

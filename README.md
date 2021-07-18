@@ -13,26 +13,37 @@
 
 ## Developing Locally
 
-Deploy the Helm chart:
+Create a local Kind cluster and Docker registry. There's a script for automating this:
+```
+./create-kind-cluster.sh
+```
+
+When making changes to the controller or gateway, you'll need to build/push images
+to the local registry. This workflow is tedious right now, and should be improved:
+```
+# Must be ran from the root of the repository
+docker build . -f r5t-controller/Dockerfile -t localhost:5000/r5t-controller:latest
+docker build . -f r5t-gateway/Dockerfile -t localhost:5000/r5t-gateway:latest
+
+docker push localhost:5000/r5t-controller:latest
+docker push localhost:5000/r5t-gateway:latest
+```
+
+Deploy/Upgrade the Helm chart:
 ```
 cd r5t-chart/
+
+# For first time installation:
 helm install r5t .
+
+# For upgrading:
+export REDIS_PASSWORD=$(kubectl get secret --namespace "default" r5t-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
+helm upgrade r5t --set redis.auth.password=$REDIS_PASSWORD .
 ```
 
-Expose the Redis service:
+Expose the gateway service:
 ```
-export REDIS_PASSWORD=$(kubectl get secret --namespace default r5t-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
-kubectl port-forward --namespace default svc/r5t-redis-master 6379:6379
-```
-
-Run the gateway service locally:
-```
-cargo run --bin r5t-gateway
-```
-
-Run the controller service locally:
-```
-cargo run --bin r5t-controller
+kubectl port-forward --namespace default svc/r5t-gateway-svc 8000:8000
 ```
 
 At this point, you have a working r5t deployment. To interact, you can build the CLI and use it.

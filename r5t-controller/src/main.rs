@@ -1,3 +1,4 @@
+use std::env;
 use std::process::exit;
 
 use futures::{StreamExt, TryStreamExt};
@@ -12,11 +13,13 @@ use tokio::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), kube::Error> {
+    let redis_host = env::var("REDIS_HOST").unwrap_or("127.0.0.1".to_string());
+    let redis_password = env::var("REDIS_PASSWORD").unwrap_or("Mxu168c6OL".to_string());
     let connection_details = ConnectionInfo {
-        addr: Box::new(ConnectionAddr::Tcp("127.0.0.1".to_string(), 6379)),
+        addr: Box::new(ConnectionAddr::Tcp(redis_host, 6379)),
         db: 0,
         username: None,
-        passwd: Some("Mxu168c6OL".to_string()),
+        passwd: Some(redis_password),
     };
 
     let kube_client = Client::try_default().await?;
@@ -96,7 +99,7 @@ async fn main() -> Result<(), kube::Error> {
                         },
                     }))?;
 
-                    let job = jobs.create(&PostParams::default(), &indexed_job).await?;
+                    jobs.create(&PostParams::default(), &indexed_job).await?;
                     let lp = ListParams::default()
                         .fields(&format!("metadata.name={}", "r5t-indexed-job"))
                         .timeout(10);

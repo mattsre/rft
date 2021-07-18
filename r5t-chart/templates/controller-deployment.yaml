@@ -14,9 +14,21 @@ spec:
       labels:
         app: {{ $fullname }}
     spec:
+      serviceAccountName: {{ .Release.Name }}-controller-sa
+      initContainers:
+      - name: init-redis
+        image: busybox:1.28
+        command: ['sh', '-c', "until nslookup {{ .Release.Name}}-redis-master.$(cat /var/run/secrets/kubernetes.io/serviceaccount/namespace).svc.cluster.local; do echo waiting for redis; sleep 2; done"]
       containers:
       - name: {{ "controller" }}
         image: "{{ .Values.controller.image }}"
-        imagePullPolicy: IfNotPresent
+        env:
+          - name: REDIS_HOST
+            value: {{ .Release.Name }}-redis-master
+          - name: REDIS_PASSWORD
+            valueFrom:
+              secretKeyRef:
+                name: {{ .Release.Name }}-redis
+                key: redis-password
         resources:
 {{ toYaml .Values.controller.resources | indent 10 }}

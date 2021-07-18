@@ -1,0 +1,32 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata: {{ $fullname := printf "%s-%s" .Release.Name "gateway" | trunc 63 | trimSuffix "-" }}
+  name: {{ $fullname }}
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  selector:
+    matchLabels:
+      app: {{ $fullname }}
+  replicas: {{ default 1 .Values.gateway.replicaCount | int }}
+  template:
+    metadata:
+      labels:
+        app: {{ $fullname }}
+    spec:
+      containers:
+      - name: {{ "gateway" }}
+        image: "{{ .Values.gateway.image }}"
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: {{ .Values.gateway.internalPort | int }}
+        livenessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.gateway.internalPort | int }}
+        readinessProbe:
+          httpGet:
+            path: /
+            port: {{ .Values.gateway.internalPort | int }}
+        resources:
+{{ toYaml .Values.gateway.resources | indent 10 }}

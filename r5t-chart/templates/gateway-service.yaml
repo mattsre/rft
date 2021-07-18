@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Service
+metadata: {{ $fullname := printf "%s-%s" .Release.Name "gateway" | trunc 63 | trimSuffix "-" }}
+  name: {{ $fullname }}-svc
+  labels:
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}"
+spec:
+  type: {{ .Values.gateway.service.type }}
+  ports:
+  - port: {{ .Values.gateway.externalPort }}
+    targetPort: {{ .Values.gateway.internalPort }}
+    protocol: TCP
+    name: {{ .Values.gateway.service.name }}
+  selector:
+    app: {{ $fullname }}

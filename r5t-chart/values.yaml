@@ -1,2 +1,32 @@
 redis:
   enabled: true
+controller:
+  replicaCount: 1
+  image: "r5t-controller:latest"
+  resources:
+    requests:
+      cpu: 100m
+      memory: 124Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+gateway:
+  replicaCount: 1
+  image: "r5t-controller:latest"
+  internalPort: 8000
+  externalPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 124Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+  service:
+    type:
+    name:
+  ingress:
+    enabled: false
+    annotations:
+    hosts:
+    tls:

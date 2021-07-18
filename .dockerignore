@@ -1,0 +1,9 @@
+target/
+
+r5t-chart/charts
+__pycache__/
+dist/
+
+docs/
+r5t-chart/
+.vscode/

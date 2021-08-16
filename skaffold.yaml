@@ -1,0 +1,45 @@
+apiVersion: skaffold/v2beta19
+kind: Config
+metadata:
+  name: r5t
+build:
+  local:
+    useBuildkit: true
+    push: true
+  artifacts:
+    - image: localhost:5000/r5t-controller
+      context: .
+      docker:
+        dockerfile: ./r5t-controller/Dockerfile
+        cacheFrom:
+          - "rust:latest"
+          - "debian:buster-slim"
+    - image: localhost:5000/r5t-gateway
+      context: .
+      docker:
+        dockerfile: ./r5t-controller/Dockerfile
+        cacheFrom:
+          - "rust:latest"
+          - "debian:buster-slim"
+
+deploy:
+  helm:
+    releases:
+      - name: r5t
+        chartPath: ./r5t-chart
+        setValueTemplates:
+          redis:
+            auth:
+              password: "{{.REDIS_PASSWORD}}"
+        artifactOverrides:
+          controller:
+            image: localhost:5000/r5t-controller
+          gateway:
+            image: localhost:5000/r5t-gateway
+
+portForward:
+  - resourceType: service
+    resourceName: r5t-gateway-svc
+    namespace: default
+    port: 8000
+    localPort: 8000

@@ -2,7 +2,7 @@
 
 ## Development Priorities
 
-- Worker SDK (Python) - Used for sourcing r5t data in jobs, i.e. `r5t.init()`
+- Worker SDK (Python) - Used for sourcing r5t data in jobs, i.e. `r5t.get_param("start_date")`
 - Move r5t components to Helm chart, use Skaffold (or similar tools) for local development rather than running outside of the cluster
 - Clean up error handling throughout the service
 - Standardize on logging library/format, improve logging throughout project

@@ -2,19 +2,19 @@ use std::env;
 use std::process::exit;
 
 use futures::{StreamExt, TryStreamExt};
-use k8s_openapi::api::{batch::v1::Job as K8S_JOB, core::v1::Pod};
+use k8s_openapi::api::batch::v1::Job as K8S_JOB;
 use kube::{
     api::{ListParams, PostParams, WatchEvent},
     Api, Client, ResourceExt,
 };
-use r5t_core::{Batch, Job};
+use r5t_core::Batch;
 use redis::{Commands, ConnectionAddr, ConnectionInfo};
 use tokio::time::Duration;
 
 #[tokio::main]
 async fn main() -> Result<(), kube::Error> {
-    let redis_host = env::var("REDIS_HOST").unwrap_or("127.0.0.1".to_string());
-    let redis_password = env::var("REDIS_PASSWORD").unwrap_or("Mxu168c6OL".to_string());
+    let redis_host = env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let redis_password = env::var("REDIS_PASSWORD").unwrap_or_else(|_| "Mxu168c6OL".to_string());
     let connection_details = ConnectionInfo {
         addr: Box::new(ConnectionAddr::Tcp(redis_host, 6379)),
         db: 0,
@@ -30,14 +30,14 @@ async fn main() -> Result<(), kube::Error> {
             Ok(mut conn) => loop {
                 let mut queued_batches: Vec<String> = conn.lrange("queued_batches", 0, -1).unwrap();
 
-                if queued_batches.len() == 0 {
+                if queued_batches.is_empty() {
                     tokio::time::sleep(Duration::from_millis(5000)).await;
                     continue;
                 }
 
-                while queued_batches.len() != 0 {
+                while !queued_batches.is_empty() {
                     let json_batch: String = conn.lpop("queued_batches").unwrap();
-                    let parsed_batch: Batch = serde_json::from_str(&json_batch.as_str()).unwrap();
+                    let parsed_batch: Batch = serde_json::from_str(json_batch.as_str()).unwrap();
 
                     println!("Processing batch: \n{}", parsed_batch);
 

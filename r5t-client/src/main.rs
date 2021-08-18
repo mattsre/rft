@@ -1,4 +1,5 @@
 use clap::{crate_version, App, Arg, Values};
+use git2::{ErrorCode, Repository};
 use isahc::{prelude::*, Body, Error, HttpClient, Request, Response};
 use r5t_core::{Batch, Job};
 use std::{collections::HashMap, process::exit};
@@ -9,8 +10,8 @@ enum ParamError {
 
 #[derive(PartialEq, Eq)]
 enum ParamFormat {
-    PAIRS,
-    MATRIX,
+    Pairs,
+    Matrix,
 }
 
 fn main() {
@@ -57,9 +58,20 @@ fn main() {
             if let Some(format) = run_matches.value_of("format") {
                 if let Some(params) = run_matches.values_of("params") {
                     match format {
-                        "pairs" => match generate_map_for_params(params, ParamFormat::PAIRS) {
+                        "pairs" => match generate_map_for_params(params, ParamFormat::Pairs) {
                             Ok((param_map, num_of_pairs)) => {
-                                let mut batch = Batch::new("Matt", filename);
+                                let repo = match Repository::discover(".") {
+                                    Ok(repo) => repo,
+                                    Err(e) => {
+                                        eprintln!("Failed to open a Git repository: {}", e);
+                                        std::process::exit(1);
+                                    }
+                                };
+
+                                let origin_url = get_repository_url(&repo);
+                                let current_branch = get_current_branch(&repo);
+                                let mut batch =
+                                    Batch::new("Matt", filename, &origin_url, &current_branch);
                                 for i in 0..num_of_pairs {
                                     let mut single_job_params: HashMap<String, String> =
                                         HashMap::new();
@@ -73,8 +85,8 @@ fn main() {
                                 }
 
                                 println!("Batch has {} jobs", batch.jobs.len());
-
-                                let json = serde_json::to_string(&batch).unwrap_or("".to_string());
+                                let json = serde_json::to_string(&batch)
+                                    .unwrap_or_else(|_| "".to_string());
                                 match post_batch("http://127.0.0.1:8000/batch", json) {
                                     Ok(mut body) => {
                                         if let Ok(response) = body.text() {
@@ -94,11 +106,22 @@ fn main() {
                                 }
                             },
                         },
-                        "matrix" => match generate_map_for_params(params, ParamFormat::MATRIX) {
+                        "matrix" => match generate_map_for_params(params, ParamFormat::Matrix) {
                             Ok((param_map, _)) => {
+                                let repo = match Repository::discover(".") {
+                                    Ok(repo) => repo,
+                                    Err(e) => {
+                                        eprintln!("Failed to open a Git repository: {}", e);
+                                        std::process::exit(1);
+                                    }
+                                };
+
                                 let combos = generate_param_combos(param_map);
 
-                                let mut batch = Batch::new("Matt", filename);
+                                let origin_url = get_repository_url(&repo);
+                                let current_branch = get_current_branch(&repo);
+                                let mut batch =
+                                    Batch::new("Matt", filename, &origin_url, &current_branch);
                                 for combo in combos {
                                     let job = Job::new(combo);
                                     batch.jobs.push(job.clone());
@@ -106,7 +129,8 @@ fn main() {
 
                                 println!("Batch has {} jobs", batch.jobs.len());
 
-                                let json = serde_json::to_string(&batch).unwrap_or("".to_string());
+                                let json = serde_json::to_string(&batch)
+                                    .unwrap_or_else(|_| "".to_string());
                                 match post_batch("http://127.0.0.1:8000/batch", json) {
                                     Ok(mut body) => {
                                         if let Ok(response) = body.text() {
@@ -136,6 +160,52 @@ fn main() {
     }
 }
 
+fn get_repository_url(repo: &Repository) -> String {
+    let origin = match repo.find_remote("origin") {
+        Ok(remote) => remote,
+        Err(e) => {
+            eprintln!("Failed to find a remote named origin. r5t-client only supports executing from git repositories using origin as their remote name: {}", e);
+            std::process::exit(1);
+        }
+    };
+
+    let url = match origin.url() {
+        Some(url) => url.to_string(),
+        None => {
+            eprintln!(
+                "No URL configured for the git remote 'origin'. Please configure an origin URL"
+            );
+            std::process::exit(1);
+        }
+    };
+
+    println!("Found origin URL: {}", &url);
+
+    url
+}
+
+fn get_current_branch(repo: &Repository) -> String {
+    let git_head = match repo.head() {
+        Ok(head) => Some(head),
+        Err(ref e) if e.code() == ErrorCode::UnbornBranch || e.code() == ErrorCode::NotFound => {
+            None
+        }
+        Err(_) => todo!(),
+    };
+
+    let branch = match git_head.as_ref().and_then(|h| h.shorthand()) {
+        Some(branch) => branch,
+        None => {
+            eprintln!("Not currently on any Git branch. Please checkout to a working branch");
+            std::process::exit(1);
+        }
+    };
+
+    println!("Currently on branch: {}", branch);
+
+    branch.to_string()
+}
+
 fn post_batch(uri: &str, batch_json: String) -> Result<Response<Body>, Error> {
     let client = HttpClient::new()?;
 
@@ -149,24 +219,20 @@ fn post_batch(uri: &str, batch_json: String) -> Result<Response<Body>, Error> {
 fn generate_param_combos(params: HashMap<String, Vec<String>>) -> Vec<HashMap<String, String>> {
     let mut combos = Vec::<HashMap<String, String>>::new();
     for (key, values) in params {
-        if combos.len() == 0 {
-            let mut new_combos = Vec::<HashMap<String, String>>::new();
-            for val in values {
+        let mut new_combos = Vec::<HashMap<String, String>>::new();
+        for val in values {
+            if combos.is_empty() {
                 let mut temp = HashMap::new();
                 temp.insert(key.clone(), val);
                 new_combos.push(temp);
-            }
-            combos = new_combos;
-        } else {
-            let mut new_combos = Vec::<HashMap<String, String>>::new();
-            for val in values {
+            } else {
                 for mut combo in combos.clone() {
                     combo.insert(key.clone(), val.clone());
                     new_combos.push(combo);
                 }
             }
-            combos = new_combos;
         }
+        combos = new_combos;
     }
 
     combos
@@ -183,12 +249,12 @@ fn generate_map_for_params(
         let values: Vec<String> = val.split(',').map(|x| x.to_string()).collect();
 
         // Ensure parameter has at least one value
-        if values.len() == 0 {
+        if values.is_empty() {
             return Err(ParamError::InvalidParam);
         }
 
         // Ensure all parameters are of the same length
-        if format == ParamFormat::PAIRS {
+        if format == ParamFormat::Pairs {
             if param_length != 0 {
                 if values.len() != param_length {
                     return Err(ParamError::InvalidParam);

@@ -4,7 +4,7 @@ extern crate rocket;
 use std::env;
 
 use r5t_core::Batch;
-use redis::{Commands, Connection, ConnectionAddr, ConnectionInfo, RedisResult};
+use redis::{Commands, ConnectionAddr, ConnectionInfo, RedisResult};
 use rocket::serde::json::{serde_json::json, Json, Value};
 
 #[get("/health")]
@@ -50,8 +50,8 @@ fn rocket() -> _ {
 }
 
 fn push_batch_to_redis(batch: Batch) -> redis::RedisResult<()> {
-    let redis_host = env::var("REDIS_HOST").unwrap_or("127.0.0.1".to_string());
-    let redis_password = env::var("REDIS_PASSWORD").unwrap_or("Mxu168c6OL".to_string());
+    let redis_host = env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
+    let redis_password = env::var("REDIS_PASSWORD").unwrap_or_else(|_| "Mxu168c6OL".to_string());
     let connection_details = ConnectionInfo {
         addr: Box::new(ConnectionAddr::Tcp(redis_host, 6379)),
         db: 0,

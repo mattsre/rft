@@ -25,6 +25,7 @@ async fn main() -> Result<(), kube::Error> {
     let kube_client = Client::try_default().await?;
     let jobs: Api<K8S_JOB> = Api::namespaced(kube_client, "default");
 
+    // TODO: improve unwrap() error handling here
     if let Ok(redis_client) = redis::Client::open(connection_details) {
         match redis_client.get_connection() {
             Ok(mut conn) => loop {

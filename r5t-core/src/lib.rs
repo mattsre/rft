@@ -12,7 +12,7 @@ static ID_ALPHA: [char; 16] = [
 /// {  
 ///     "batch_id": "fkIopp4D_K",  
 ///     "author": "Matt",
-///     "source_file": "r5t-client/test/basic.py",
+///     "source_file": "examples/basic/main.py",
 ///     "repository": "git@github.com/retwolf/r5t"
 ///     "branch": "master"
 ///     "jobs": [

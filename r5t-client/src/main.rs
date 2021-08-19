@@ -1,5 +1,5 @@
 use clap::{crate_version, App, Arg, Values};
-use git2::{ErrorCode, Repository};
+use git2::{Config, ErrorCode, Repository};
 use isahc::{prelude::*, Body, Error, HttpClient, Request, Response};
 use r5t_core::{Batch, Job};
 use std::{collections::HashMap, process::exit};
@@ -68,10 +68,12 @@ fn main() {
                                     }
                                 };
 
+                                let author = get_current_author();
+                                let full_path = get_full_source_path(&repo, filename);
                                 let origin_url = get_repository_url(&repo);
                                 let current_branch = get_current_branch(&repo);
                                 let mut batch =
-                                    Batch::new("Matt", filename, &origin_url, &current_branch);
+                                    Batch::new(&author, &full_path, &origin_url, &current_branch);
                                 for i in 0..num_of_pairs {
                                     let mut single_job_params: HashMap<String, String> =
                                         HashMap::new();
@@ -118,10 +120,12 @@ fn main() {
 
                                 let combos = generate_param_combos(param_map);
 
+                                let author = get_current_author();
+                                let full_path = get_full_source_path(&repo, filename);
                                 let origin_url = get_repository_url(&repo);
                                 let current_branch = get_current_branch(&repo);
                                 let mut batch =
-                                    Batch::new("Matt", filename, &origin_url, &current_branch);
+                                    Batch::new(&author, &full_path, &origin_url, &current_branch);
                                 for combo in combos {
                                     let job = Job::new(combo);
                                     batch.jobs.push(job.clone());
@@ -158,6 +162,49 @@ fn main() {
             }
         }
     }
+}
+
+fn get_current_author() -> String {
+    let gitconfig = Config::open(
+        &Config::find_global()
+            .expect("Unable to find global gitconfig. Does one exist in ${HOME}/.gitconfig?"),
+    )
+    .expect("Unable to open gitconfig to find author name");
+
+    match gitconfig.get_string("user.name") {
+        Ok(name) => name,
+        Err(e) => {
+            eprintln!(
+                "No username found in .gitconfig. Please set a username with git config --global user.name. \nError: {}", &e
+            );
+            std::process::exit(1);
+        }
+    }
+}
+
+fn get_full_source_path(repo: &Repository, filename: &str) -> String {
+    let path_prefix = match repo.workdir() {
+        Some(p) => p,
+        None => {
+            eprintln!(
+                "The current repository is bare. r5t does not support working with bare repositories"
+            );
+            std::process::exit(1);
+        }
+    };
+
+    let current_dir = std::env::current_dir().expect("Unable to get current directory");
+    let source_path = current_dir.join(filename);
+
+    source_path
+        .strip_prefix(path_prefix)
+        .unwrap_or_else(|e| {
+            eprintln!("Unable to strip path prefix: {}", &e);
+            std::process::exit(1);
+        })
+        .to_str()
+        .expect("Couldn't convert path to a string")
+        .to_owned()
 }
 
 fn get_repository_url(repo: &Repository) -> String {

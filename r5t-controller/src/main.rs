@@ -38,94 +38,97 @@ async fn main() -> Result<(), kube::Error> {
 
                 while !queued_batches.is_empty() {
                     let json_batch: String = conn.lpop("queued_batches").unwrap();
-                    let parsed_batch: Batch = serde_json::from_str(json_batch.as_str()).unwrap();
 
-                    println!("Processing batch: \n{}", parsed_batch);
+                    if let Ok(batch) = Batch::from_json(&json_batch) {
+                        println!("Processing batch: \n{}", batch);
 
-                    let indexed_job = serde_json::from_value(serde_json::json!({
-                        "apiVersion": "batch/v1",
-                        "kind": "Job",
-                        "metadata": {
-                            "name": format!("r5t-indexed-job-{}", parsed_batch.batch_id)
-                        },
-                        "spec": {
-                            "completions": parsed_batch.jobs.len(),
-                            "parallelism": 3,
-                            "completionMode": "Indexed",
-                            "template": {
-                                "spec": {
-                                    "restartPolicy": "Never",
-                                    "initContainers": [
-                                        {
-                                            "name": "input-mapping",
-                                            "image": "public.ecr.aws/e1q1z8n5/alpine-jq",
-                                            "command": [
-                                                "/bin/sh",
-                                                "-c",
-                                                format!("echo '{}' | jq '.jobs['\"$JOB_COMPLETION_INDEX\"']' > /input/data.json", json_batch)
-                                            ],
-                                            "volumeMounts": [
-                                                {
-                                                    "mountPath": "/input",
-                                                    "name": "input"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "containers": [
-                                        {
-                                            "name": "worker",
-                                            "image": "docker.io/library/bash",
-                                            "command": [
-                                                "bash",
-                                                "-c",
-                                                "cat /input/data.json"
-                                            ],
-                                            "volumeMounts": [
-                                                {
-                                                    "mountPath": "/input",
-                                                    "name": "input"
-                                                }
-                                            ]
-                                        }
-                                    ],
-                                    "volumes": [
-                                        {
-                                            "name": "input",
-                                            "emptyDir": {}
-                                        }
-                                    ]
+                        let indexed_job = serde_json::from_value(serde_json::json!({
+                            "apiVersion": "batch/v1",
+                            "kind": "Job",
+                            "metadata": {
+                                "name": format!("r5t-indexed-job-{}", batch.batch_id)
+                            },
+                            "spec": {
+                                "completions": batch.jobs.len(),
+                                "parallelism": 3,
+                                "completionMode": "Indexed",
+                                "template": {
+                                    "spec": {
+                                        "restartPolicy": "Never",
+                                        "volumes": [
+                                            {
+                                                "name": "input",
+                                                "emptyDir": {}
+                                            },
+                                        ],
+                                        "initContainers": [
+                                            {
+                                                "name": "input-mapping",
+                                                "image": "public.ecr.aws/e1q1z8n5/alpine-jq",
+                                                "command": [
+                                                    "/bin/sh",
+                                                    "-c",
+                                                    format!("echo '{}' | jq '.jobs['\"$JOB_COMPLETION_INDEX\"']' > /input/data.json", json_batch)
+                                                ],
+                                                "volumeMounts": [
+                                                    {
+                                                        "name": "input",
+                                                        "mountPath": "/input"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                        "containers": [
+                                            {
+                                                "name": "worker",
+                                                "image": "docker.io/library/bash",
+                                                "command": [
+                                                    "bash",
+                                                    "-c",
+                                                    "cat /input/data.json"
+                                                ],
+                                                "volumeMounts": [
+                                                    {
+                                                        "name": "input",
+                                                        "mountPath": "/input"
+                                                    }
+                                                ]
+                                            }
+                                        ],
+                                    }
                                 }
+                            },
+                        }))?;
+
+                        jobs.create(&PostParams::default(), &indexed_job).await?;
+                        let lp = ListParams::default()
+                            .fields(&format!("metadata.name={}", "r5t-indexed-job"))
+                            .timeout(10);
+
+                        let mut stream = jobs.watch(&lp, "0").await?.boxed();
+
+                        while let Some(status) = stream.try_next().await? {
+                            match status {
+                                WatchEvent::Added(o) => println!("Added {}", o.name()),
+                                WatchEvent::Modified(o) => {
+                                    let s = o.status.as_ref().expect("status exists on job");
+                                    let indices = s.completed_indexes.clone().unwrap_or_default();
+                                    println!(
+                                        "Modified: {} with indices completed: {}",
+                                        o.name(),
+                                        indices
+                                    );
+                                }
+                                WatchEvent::Deleted(o) => println!("Deleted Job: {}", o.name()),
+                                WatchEvent::Error(e) => println!("Error {}", e),
+                                _ => {}
                             }
-                        },
-                    }))?;
-
-                    jobs.create(&PostParams::default(), &indexed_job).await?;
-                    let lp = ListParams::default()
-                        .fields(&format!("metadata.name={}", "r5t-indexed-job"))
-                        .timeout(10);
-
-                    let mut stream = jobs.watch(&lp, "0").await?.boxed();
-
-                    while let Some(status) = stream.try_next().await? {
-                        match status {
-                            WatchEvent::Added(o) => println!("Added {}", o.name()),
-                            WatchEvent::Modified(o) => {
-                                let s = o.status.as_ref().expect("status exists on job");
-                                let indices = s.completed_indexes.clone().unwrap_or_default();
-                                println!(
-                                    "Modified: {} with indices completed: {}",
-                                    o.name(),
-                                    indices
-                                );
-                            }
-                            WatchEvent::Deleted(o) => println!("Deleted {}", o.name()),
-                            WatchEvent::Error(e) => println!("Error {}", e),
-                            _ => {}
                         }
-                    }
 
-                    queued_batches = conn.lrange("queued_batches", 0, -1).unwrap();
+                        queued_batches = conn.lrange("queued_batches", 0, -1).unwrap();
+                    } else {
+                        eprintln!("Unable to deserialize batch, skipping: {}", &json_batch);
+                    }
                 }
 
                 tokio::time::sleep(Duration::from_millis(5000)).await;

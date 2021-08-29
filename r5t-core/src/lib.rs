@@ -1,6 +1,7 @@
 use core::fmt;
 use nanoid::nanoid;
 use serde::{Deserialize, Serialize};
+use serde_json::Error;
 use std::collections::HashMap;
 
 static ID_LENGTH: usize = 10;
@@ -44,6 +45,13 @@ impl Batch {
             repository_url: repository_url.to_string(),
             branch: branch.to_string(),
             jobs: Vec::<Job>::new(),
+        }
+    }
+
+    pub fn from_json(json: &str) -> Result<Batch, Error> {
+        match serde_json::from_str(json) {
+            Ok(b) => Ok(b),
+            Err(e) => Err(e),
         }
     }
 }

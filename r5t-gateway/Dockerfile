@@ -1,7 +1,9 @@
 FROM rust:latest as builder
 WORKDIR /usr/src/app
 COPY . .
-RUN cargo install --path ./r5t-gateway
+RUN --mount=type=cache,target=/usr/local/cargo/registry \
+    --mount=type=cache,target=/usr/src/app/target \
+    cargo install --path ./r5t-gateway
 
 FROM debian:buster-slim
 RUN apt-get update && apt-get install -y pkg-config libssl-dev && rm -rf /var/lib/apt/lists/*

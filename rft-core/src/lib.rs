@@ -14,7 +14,7 @@ static ID_ALPHA: [char; 16] = [
 ///     "batch_id": "fkIopp4D_K",  
 ///     "author": "Matt",
 ///     "source_file": "examples/basic/main.py",
-///     "repository": "git@github.com/retwolf/r5t"
+///     "repository": "git@github.com/retwolf/rft"
 ///     "branch": "master"
 ///     "jobs": [
 ///         {...} - See job structure below for this format

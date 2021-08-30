@@ -1,2 +1,2 @@
 [workspace]
-members = ["r5t-core", "r5t-client", "r5t-gateway", "r5t-web", "r5t-controller"]
+members = ["rft-core", "rft-cli", "rft-gateway", "rft-web", "rft-controller"]

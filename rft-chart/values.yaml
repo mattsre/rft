@@ -2,7 +2,7 @@ redis:
   enabled: true
 controller:
   replicaCount: 1
-  image: "localhost:5000/r5t-controller:latest"
+  image: "localhost:5000/rft-controller:latest"
   resources:
     requests:
       cpu: 100m
@@ -12,7 +12,7 @@ controller:
       memory: 512Mi
 gateway:
   replicaCount: 1
-  image: "localhost:5000/r5t-gateway:latest"
+  image: "localhost:5000/rft-gateway:latest"
   internalPort: 8000
   externalPort: 8000
   resources:

@@ -1,13 +1,11 @@
 [package]
-name = "r5t-client"
+name = "rft-core"
 version = "0.1.0"
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-r5t-core = { path = "../r5t-core" }
-clap = "3.0.0-beta.2"
+nanoid = "0.4.0"
+serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
-isahc = "1.4"
-git2 = "0.13"

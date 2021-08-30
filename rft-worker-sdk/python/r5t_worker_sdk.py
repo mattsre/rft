@@ -1,4 +1,4 @@
-"""A Python SDK for using r5t to process work in parallel"""
+"""A Python SDK for using rft to process work in parallel"""
 import json
 
 
@@ -12,7 +12,7 @@ def job_id(datapath="/input/data.json"):
 
             return job_config["job_id"]
     except FileNotFoundError as err:
-        print("Provided datapath did not contain an r5t datafile")
+        print("Provided datapath did not contain an rft datafile")
         raise
 
 
@@ -23,5 +23,5 @@ def get_param(str, fallback, datapath="/input/data.json"):
 
             return job_config["params"][str]
     except FileNotFoundError:
-        print("No r5t datafile found, using fallback value")
+        print("No rft datafile found, using fallback value")
         return fallback

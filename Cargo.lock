@@ -1424,54 +1424,6 @@ dependencies = [
 ]
 
 [[package]]
-name = "r5t-client"
-version = "0.1.0"
-dependencies = [
- "clap",
- "git2",
- "isahc",
- "r5t-core",
- "serde_json",
-]
-
-[[package]]
-name = "r5t-controller"
-version = "0.1.0"
-dependencies = [
- "futures",
- "k8s-openapi",
- "kube",
- "kube-runtime",
- "r5t-core",
- "redis",
- "serde_json",
- "tokio",
-]
-
-[[package]]
-name = "r5t-core"
-version = "0.1.0"
-dependencies = [
- "nanoid",
- "serde",
- "serde_json",
-]
-
-[[package]]
-name = "r5t-gateway"
-version = "0.1.0"
-dependencies = [
- "r5t-core",
- "redis",
- "rocket",
- "serde_json",
-]
-
-[[package]]
-name = "r5t-web"
-version = "0.1.0"
-
-[[package]]
 name = "rand"
 version = "0.8.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1588,6 +1540,54 @@ checksum = "3acd125665422973a33ac9d3dd2df85edad0f4ae9b00dafb1a05e43a9f5ef8e7"
 dependencies = [
  "winapi",
 ]
+
+[[package]]
+name = "rft-client"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "git2",
+ "isahc",
+ "rft-core",
+ "serde_json",
+]
+
+[[package]]
+name = "rft-controller"
+version = "0.1.0"
+dependencies = [
+ "futures",
+ "k8s-openapi",
+ "kube",
+ "kube-runtime",
+ "redis",
+ "rft-core",
+ "serde_json",
+ "tokio",
+]
+
+[[package]]
+name = "rft-core"
+version = "0.1.0"
+dependencies = [
+ "nanoid",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
+name = "rft-gateway"
+version = "0.1.0"
+dependencies = [
+ "redis",
+ "rft-core",
+ "rocket",
+ "serde_json",
+]
+
+[[package]]
+name = "rft-web"
+version = "0.1.0"
 
 [[package]]
 name = "rocket"

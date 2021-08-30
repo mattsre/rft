@@ -1,7 +1,7 @@
 use clap::{crate_version, App, Arg, Values};
 use git2::{Config, ErrorCode, Repository};
 use isahc::{prelude::*, Body, Error, HttpClient, Request, Response};
-use r5t_core::{Batch, Job};
+use rft_core::{Batch, Job};
 use std::{collections::HashMap, process::exit};
 
 enum ParamError {
@@ -15,7 +15,7 @@ enum ParamFormat {
 }
 
 fn main() {
-    let app = App::new("r5t-client")
+    let app = App::new("rft-client")
         .version(crate_version!())
         .about("rust data framework kubernetes operator queue thing")
         .subcommand(App::new("run")
@@ -187,7 +187,7 @@ fn get_full_source_path(repo: &Repository, filename: &str) -> String {
         Some(p) => p,
         None => {
             eprintln!(
-                "The current repository is bare. r5t does not support working with bare repositories"
+                "The current repository is bare. rft does not support working with bare repositories"
             );
             std::process::exit(1);
         }
@@ -211,7 +211,7 @@ fn get_repository_url(repo: &Repository) -> String {
     let origin = match repo.find_remote("origin") {
         Ok(remote) => remote,
         Err(e) => {
-            eprintln!("Failed to find a remote named origin. r5t-client only supports executing from git repositories using origin as their remote name: {}", e);
+            eprintln!("Failed to find a remote named origin. rft-client only supports executing from git repositories using origin as their remote name: {}", e);
             std::process::exit(1);
         }
     };

@@ -6,9 +6,9 @@ do
   esac
 done
 
-echo "Building and deploying component: r5t-$component";
+echo "Building and deploying component: rft-$component";
 
-docker build . -f r5t-$component/Dockerfile -t localhost:5000/r5t-$component:latest
-docker push localhost:5000/r5t-$component:latest
+docker build . -f rft-$component/Dockerfile -t localhost:5000/rft-$component:latest
+docker push localhost:5000/rft-$component:latest
 sleep 1
-kubectl rollout restart deployment r5t-$component
+kubectl rollout restart deployment rft-$component

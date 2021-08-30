@@ -3,8 +3,8 @@ extern crate rocket;
 
 use std::env;
 
-use r5t_core::Batch;
 use redis::{Commands, ConnectionAddr, ConnectionInfo, RedisResult};
+use rft_core::Batch;
 use rocket::serde::json::{serde_json::json, Json, Value};
 
 #[get("/health")]

@@ -7,8 +7,8 @@ use kube::{
     api::{ListParams, PostParams, WatchEvent},
     Api, Client, ResourceExt,
 };
-use r5t_core::Batch;
 use redis::{Commands, ConnectionAddr, ConnectionInfo};
+use rft_core::Batch;
 use tokio::time::Duration;
 
 #[tokio::main]
@@ -46,7 +46,7 @@ async fn main() -> Result<(), kube::Error> {
                             "apiVersion": "batch/v1",
                             "kind": "Job",
                             "metadata": {
-                                "name": format!("r5t-indexed-job-{}", batch.batch_id)
+                                "name": format!("rft-indexed-job-{}", batch.batch_id)
                             },
                             "spec": {
                                 "completions": batch.jobs.len(),
@@ -102,7 +102,7 @@ async fn main() -> Result<(), kube::Error> {
 
                         jobs.create(&PostParams::default(), &indexed_job).await?;
                         let lp = ListParams::default()
-                            .fields(&format!("metadata.name={}", "r5t-indexed-job"))
+                            .fields(&format!("metadata.name={}", "rft-indexed-job"))
                             .timeout(10);
 
                         let mut stream = jobs.watch(&lp, "0").await?.boxed();

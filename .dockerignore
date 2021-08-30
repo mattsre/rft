@@ -1,6 +1,6 @@
 target/
 
-r5t-chart/charts
+rft-chart/charts
 __pycache__/
 dist/
 

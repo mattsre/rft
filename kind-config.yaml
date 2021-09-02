@@ -8,6 +8,7 @@ containerdConfigPatches:
       endpoint = ["http://kind-registry:5000"]
 nodes:
   - role: control-plane
+    image: kindest/node:v1.22.1
     extraPortMappings:
       - containerPort: 30000
         hostPort: 30000

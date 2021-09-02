@@ -18,17 +18,6 @@ Create a local Kind cluster and Docker registry. There's a script for automating
 ./create-kind-cluster.sh
 ```
 
-When making changes to the controller or gateway, you'll need to build/push images
-to the local registry. This workflow is tedious right now, and should be improved:
-```
-# Must be ran from the root of the repository
-docker build . -f rft-controller/Dockerfile -t localhost:5000/rft-controller:latest
-docker build . -f rft-gateway/Dockerfile -t localhost:5000/rft-gateway:latest
-
-docker push localhost:5000/rft-controller:latest
-docker push localhost:5000/rft-gateway:latest
-```
-
 Deploy/Upgrade the Helm chart:
 ```
 cd rft-chart/
@@ -39,6 +28,22 @@ helm install rft .
 # For upgrading:
 export REDIS_PASSWORD=$(kubectl get secret --namespace "default" rft-redis -o jsonpath="{.data.redis-password}" | base64 --decode)
 helm upgrade rft --set redis.auth.password=$REDIS_PASSWORD .
+```
+
+When making changes to the controller or gateway, you'll need to build/push images
+to the local registry. There's a `deploy.sh` script which automates this behavior and restarts the
+deployment pickup the new image.
+```
+# Using deploy.sh
+./deploy.sh -c controller
+./deploy.sh -c gateway
+
+# Must be ran from the root of the repository
+docker build . -f rft-controller/Dockerfile -t localhost:5000/rft-controller:latest
+docker build . -f rft-gateway/Dockerfile -t localhost:5000/rft-gateway:latest
+
+docker push localhost:5000/rft-controller:latest
+docker push localhost:5000/rft-gateway:latest
 ```
 
 Expose the gateway service:

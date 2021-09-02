@@ -3,7 +3,7 @@ extern crate rocket;
 
 use std::env;
 
-use redis::{Commands, ConnectionAddr, ConnectionInfo, RedisResult};
+use redis::{Commands, ConnectionAddr, ConnectionInfo, RedisConnectionInfo, RedisResult};
 use rft_core::Batch;
 use rocket::serde::json::{serde_json::json, Json, Value};
 
@@ -53,10 +53,12 @@ fn push_batch_to_redis(batch: Batch) -> redis::RedisResult<()> {
     let redis_host = env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let redis_password = env::var("REDIS_PASSWORD").unwrap_or_else(|_| "Mxu168c6OL".to_string());
     let connection_details = ConnectionInfo {
-        addr: Box::new(ConnectionAddr::Tcp(redis_host, 6379)),
-        db: 0,
-        username: None,
-        passwd: Some(redis_password),
+        addr: ConnectionAddr::Tcp(redis_host, 6379),
+        redis: RedisConnectionInfo {
+            db: 0,
+            username: None,
+            password: Some(redis_password),
+        },
     };
     let client = redis::Client::open(connection_details)?;
     let mut conn = client.get_connection()?;

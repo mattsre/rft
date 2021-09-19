@@ -7,7 +7,7 @@ use kube::{
     api::{ListParams, PostParams, WatchEvent},
     Api, Client, ResourceExt,
 };
-use redis::{Commands, ConnectionAddr, ConnectionInfo};
+use redis::{Commands, ConnectionAddr, ConnectionInfo, RedisConnectionInfo};
 use rft_core::Batch;
 use tokio::time::Duration;
 
@@ -16,10 +16,12 @@ async fn main() -> Result<(), kube::Error> {
     let redis_host = env::var("REDIS_HOST").unwrap_or_else(|_| "127.0.0.1".to_string());
     let redis_password = env::var("REDIS_PASSWORD").unwrap_or_else(|_| "Mxu168c6OL".to_string());
     let connection_details = ConnectionInfo {
-        addr: Box::new(ConnectionAddr::Tcp(redis_host, 6379)),
-        db: 0,
-        username: None,
-        passwd: Some(redis_password),
+        addr: ConnectionAddr::Tcp(redis_host, 6379),
+        redis: RedisConnectionInfo {
+            db: 0,
+            username: None,
+            password: Some(redis_password),
+        },
     };
 
     let kube_client = Client::try_default().await?;
@@ -37,7 +39,7 @@ async fn main() -> Result<(), kube::Error> {
                 }
 
                 while !queued_batches.is_empty() {
-                    let json_batch: String = conn.lpop("queued_batches").unwrap();
+                    let json_batch: String = conn.lpop("queued_batches", None).unwrap();
 
                     if let Ok(batch) = Batch::from_json(&json_batch) {
                         println!("Processing batch: \n{}", batch);

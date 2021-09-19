@@ -8,5 +8,5 @@ edition = "2018"
 [dependencies]
 rft-core = { path = "../rft-core" }
 rocket = { version = "0.5.0-rc.1", features = ["json"] }
-redis = "0.20.1"
+redis = "0.21.2"
 serde_json = "1.0"

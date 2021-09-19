@@ -836,9 +836,9 @@ dependencies = [
 
 [[package]]
 name = "k8s-openapi"
-version = "0.12.0"
+version = "0.13.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "fbff78f6da26dde0d74188966d23fc763431d730d0f766ecf7699209f8fc243c"
+checksum = "748acc444200aa3528dc131a8048e131a9e75a611a52d152e276e99199313d1a"
 dependencies = [
  "base64",
  "bytes",
@@ -850,9 +850,9 @@ dependencies = [
 
 [[package]]
 name = "kube"
-version = "0.58.1"
+version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "21d3c79fb97a822a63ce9422f7302484748032c808954898ba248705e99ea110"
+checksum = "a0ae4dcb1a65182551922303a2d292b463513a6727db5ad980afbd32df7f3c16"
 dependencies = [
  "base64",
  "bytes",
@@ -885,14 +885,15 @@ dependencies = [
 
 [[package]]
 name = "kube-core"
-version = "0.58.1"
+version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "ffbce0d890efc42abb31e974419e25a643a97ab7c6b3b9498bda686d10b55f8d"
+checksum = "04ccd59635e9b21353da8d4a394bb5d3473b5965ed44496c8f857281b0625ffe"
 dependencies = [
  "form_urlencoded",
  "http",
  "json-patch",
  "k8s-openapi",
+ "once_cell",
  "serde",
  "serde_json",
  "thiserror",
@@ -900,9 +901,9 @@ dependencies = [
 
 [[package]]
 name = "kube-runtime"
-version = "0.58.1"
+version = "0.60.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "a4f034d330a0849e1603e285389e3f0ed93b9a86017d46e851c9e49e6d0b99e2"
+checksum = "eec378b03890f9f2bfa9448a51aa0f6a4299f6bb2ed0d180330e628c7a395918"
 dependencies = [
  "dashmap",
  "derivative",
@@ -1465,9 +1466,9 @@ dependencies = [
 
 [[package]]
 name = "redis"
-version = "0.20.2"
+version = "0.21.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "d4f0ceb2ec0dd769483ecd283f6615aa83dcd0be556d5294c6e659caefe7cc54"
+checksum = "202c5bf92cad3d57605c366e644a7fbf305a83f19754fc66678c6265dcc9b8b4"
 dependencies = [
  "async-trait",
  "combine",

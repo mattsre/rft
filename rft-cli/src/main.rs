@@ -1,7 +1,8 @@
 use clap::{crate_version, App, Arg, Values};
 use git2::{Config, ErrorCode, Repository};
 use isahc::{prelude::*, Body, Error, HttpClient, Request, Response};
-use rft_core::{Batch, Job};
+use rft_core::batch::Batch;
+use rft_core::job::Job;
 use std::{collections::HashMap, process::exit};
 
 enum ParamError {

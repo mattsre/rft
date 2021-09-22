@@ -1574,6 +1574,7 @@ dependencies = [
  "nanoid",
  "serde",
  "serde_json",
+ "snafu",
 ]
 
 [[package]]
